@@ -4,7 +4,7 @@ extern crate opengl_graphics;
 extern crate piston;
 
 use std::f32::consts::E;
-use std::process;
+use std::{backtrace, process};
 use piston::window::{self, WindowSettings};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{Button, FocusEvent, Key, PressEvent, ReleaseEvent, RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
@@ -50,7 +50,9 @@ impl App {
                 right, 
                 c.transform.trans(args.width as f64 - 10.0, right_pos), 
                 gl);
-        })
+                rectangle(FOREGROUND, ball, c.transform.trans(ball_x, ball_y), gl);
+        });
+        
     }
 
     fn Update(&mut self, _args: &UpdateArgs) {
@@ -64,12 +66,12 @@ impl App {
             self.right_pos += self.right_vel;
         }
 
-        self.vel_x += self.ball_x;
+        self.ball_x += self.vel_x;
 
         if self.ball_x > 502 {
             self.vel_x = -self.vel_x;
 
-            if self.ball_y < self.right_pos || self.ball_y > self.right_pos + 50.0 {
+            if self.ball_y < self.right_pos || self.ball_y > self.right_pos + 50 {
                 self.left_score += 1;
                 if self.left_score >= 5 {
                     println!("left wins!");
@@ -104,14 +106,14 @@ impl App {
     }
 
     fn press(&mut self, args: &Button) {
-        if let &Button::Keyboard(Key) = args {
+        if let &Button::Keyboard(key) = args {
             match key {
                 Key::Up => {
-                    self.right_vel = 1;
+                    self.right_vel = -1;
                 }
 
                 Key::Down => {
-                    self.right_vel = -1;
+                    self.right_vel = 1;
                 }
 
                 Key::W => {
@@ -127,7 +129,7 @@ impl App {
     }
 
     fn release(&mut self, args: &Button) {
-        if let &Button::Keyboard(Key) = args {
+        if let &Button::Keyboard(key) = args {
             match key {
                 Key::Up => {
                     self.right_vel = 0;
@@ -152,13 +154,13 @@ impl App {
 
 fn main() {
     let opengl = OpenGL::V3_2; 
-    let mut_window: GlutinWindow = WindowSettings::new("pong", [512, 342])
+    let mut window: GlutinWindow = WindowSettings::new("pong", [512, 342])
     .opengl(opengl)
     .exit_on_esc(true)
     .build()
     .unwrap();
 
-    let mut_app = App {
+    let mut app = App {
         gl: GlGraphics::new(opengl),
         left_score: 0,
         left_pos: 1, 
@@ -174,7 +176,20 @@ fn main() {
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {
-        
+        if let Some(r) = e.render_args() {
+            app.Render(&r);
+        }
+
+        if let Some(u) = e.update_args() {
+            app.Update(&u);
+        }
+
+        if let Some(b) = e.press_args() {
+            app.press(&b);
+        }
+        if let Some(b) = e.release_args() {
+            app.release(&b);
+        }
     }
 
 }
